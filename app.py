@@ -120,6 +120,14 @@ def load_positions():
 # ============================================================
 # SCORING
 # ============================================================
+def safe_gradient(styler_df, subset, cmap="RdYlGn"):
+    """Apply background gradient if matplotlib is available, otherwise plain."""
+    try:
+        return styler_df.style.background_gradient(subset=subset, cmap=cmap)
+    except Exception:
+        return styler_df
+
+
 def z_score(s):
     sd = s.std()
     return s * 0 if (sd == 0 or pd.isna(sd)) else (s - s.mean()) / sd
@@ -347,7 +355,10 @@ with tab2:
             return "background-color: #4a1c1c; color: #f8d7da"
         return ""
 
-    st.dataframe(cal.style.map(tone_color, subset=["Tone"]), width="stretch", hide_index=True)
+    try:
+        st.dataframe(cal.style.map(tone_color, subset=["Tone"]), width="stretch", hide_index=True)
+    except Exception:
+        st.dataframe(cal, width="stretch", hide_index=True)
 
     soon = cal[(cal["Days"].notna()) & (cal["Days"] <= 14) & (cal["Days"] >= 0)]
     if len(soon) > 0:
@@ -379,7 +390,7 @@ with tab1:
     show.columns = ["Rate", "Infl", "Real", "Outlook", "Fwd Real", "CA", "SCORE"]
     show["Tone"] = [banks.get(c, {}).get("tone", "-") for c in show.index]
     show["Next Mtg"] = [banks.get(c, {}).get("next_meeting", "-") for c in show.index]
-    st.dataframe(show.style.background_gradient(subset=["SCORE"], cmap="RdYlGn"), width="stretch")
+    st.dataframe(safe_gradient(show, ["SCORE"]), width="stretch")
 
     if st.button("Run scan", type="primary"):
         st.session_state["scan"] = True
